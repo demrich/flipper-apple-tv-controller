@@ -1,9 +1,9 @@
-#include "xbox_controller_view.h"
+#include "apple_tv_remote_view.h"
 
 #include <infrared_worker.h>
 #include <infrared_transmit.h>
 
-struct XboxControllerView {
+struct AppleTVRemoteView {
     View* view;
     NotificationApp* notifications;
 };
@@ -16,10 +16,10 @@ typedef struct {
     bool ok_pressed;
     bool back_pressed;
     bool connected;
-} XboxControllerViewModel;
+} AppleTVRemoteViewModel;
 
 static void
-    xbox_controller_view_draw_arrow(Canvas* canvas, uint8_t x, uint8_t y, CanvasDirection dir) {
+    apple_tv_remote_view_draw_arrow(Canvas* canvas, uint8_t x, uint8_t y, CanvasDirection dir) {
     if(dir == CanvasDirectionBottomToTop) {
         canvas_draw_triangle(canvas, x - 2, y - 2, 5, 3, dir);
         canvas_draw_line(canvas, x - 2, y - 3, x - 2, y + 4);
@@ -35,7 +35,7 @@ static void
     }
 }
 
-static void xbox_controller_view_draw_arrow_button(
+static void apple_tv_remote_view_draw_arrow_button(
     Canvas* canvas,
     bool pressed,
     uint8_t x,
@@ -46,11 +46,11 @@ static void xbox_controller_view_draw_arrow_button(
         elements_slightly_rounded_box(canvas, x + 3, y + 2, 13, 13);
         canvas_set_color(canvas, ColorWhite);
     }
-    xbox_controller_view_draw_arrow(canvas, x + 11, y + 8, direction);
+    apple_tv_remote_view_draw_arrow(canvas, x + 11, y + 8, direction);
     canvas_set_color(canvas, ColorBlack);
 }
 
-static void xbox_controller_draw_wide_button(
+static void apple_tv_remote_draw_wide_button(
     Canvas* canvas,
     bool pressed,
     uint8_t x,
@@ -68,34 +68,34 @@ static void xbox_controller_draw_wide_button(
     canvas_set_color(canvas, ColorBlack);
 }
 
-static void xbox_controller_view_draw_callback(Canvas* canvas, void* context) {
+static void apple_tv_remote_view_draw_callback(Canvas* canvas, void* context) {
     furi_assert(context);
-    XboxControllerViewModel* model = context;
+    AppleTVRemoteViewModel* model = context;
 
     canvas_set_font(canvas, FontPrimary);
-    elements_multiline_text_aligned(canvas, 0, 0, AlignLeft, AlignTop, "Xbox One");
+    elements_multiline_text_aligned(canvas, 0, 0, AlignLeft, AlignTop, "Apple TV");
 
     canvas_set_font(canvas, FontSecondary);
 
     canvas_draw_icon(canvas, 0, 12, &I_Pin_back_arrow_10x8);
     canvas_draw_str(canvas, 12, 20, "Hold");
 
-    xbox_controller_view_draw_arrow_button(
+    apple_tv_remote_view_draw_arrow_button(
         canvas, model->up_pressed, 23, 74, CanvasDirectionBottomToTop);
-    xbox_controller_view_draw_arrow_button(
+    apple_tv_remote_view_draw_arrow_button(
         canvas, model->down_pressed, 23, 110, CanvasDirectionTopToBottom);
-    xbox_controller_view_draw_arrow_button(
+    apple_tv_remote_view_draw_arrow_button(
         canvas, model->left_pressed, 0, 92, CanvasDirectionRightToLeft);
-    xbox_controller_view_draw_arrow_button(
+    apple_tv_remote_view_draw_arrow_button(
         canvas, model->right_pressed, 46, 92, CanvasDirectionLeftToRight);
 
     int buttons_post = 30;
     // Ok
-    xbox_controller_draw_wide_button(
-        canvas, model->ok_pressed, 0, buttons_post, "A", &I_Ok_btn_9x9);
+    apple_tv_remote_draw_wide_button(
+        canvas, model->ok_pressed, 0, buttons_post, "Center", &I_Ok_btn_9x9);
     // Back
-    xbox_controller_draw_wide_button(
-        canvas, model->back_pressed, 0, buttons_post + 19, "B", &I_Pin_back_arrow_10x8);
+    apple_tv_remote_draw_wide_button(
+        canvas, model->back_pressed, 0, buttons_post + 19, "Back", &I_Pin_back_arrow_10x8);
 }
 
 const NotificationSequence sequence_blink_purple_50 = {
@@ -105,10 +105,10 @@ const NotificationSequence sequence_blink_purple_50 = {
     NULL,
 };
 
-void send_xbox_ir(uint32_t command, NotificationApp* notifications) {
+void send_apple_tv_ir(uint32_t command, NotificationApp* notifications) {
     InfraredMessage* message = malloc(sizeof(InfraredMessage));
     message->protocol = InfraredProtocolNECext;
-    message->address = 0xD880;
+    message->address = 0xEE87;
     message->command = command;
     message->repeat = false;
     notification_message(notifications, &sequence_blink_purple_50);
@@ -117,30 +117,30 @@ void send_xbox_ir(uint32_t command, NotificationApp* notifications) {
 }
 
 static void
-    xbox_controller_view_process(XboxControllerView* xbox_controller_view, InputEvent* event) {
+    apple_tv_remote_view_process(AppleTVRemoteView* apple_tv_remote_view, InputEvent* event) {
     with_view_model(
-        xbox_controller_view->view,
-        XboxControllerViewModel * model,
+        apple_tv_remote_view->view,
+        AppleTVRemoteViewModel * model,
         {
             if(event->type == InputTypePress) {
                 if(event->key == InputKeyUp) {
                     model->up_pressed = true;
-                    send_xbox_ir(0xE11E, xbox_controller_view->notifications);
+                    send_apple_tv_ir(0x0B2E, apple_tv_remote_view->notifications);
                 } else if(event->key == InputKeyDown) {
                     model->down_pressed = true;
-                    send_xbox_ir(0xE01F, xbox_controller_view->notifications);
+                    send_apple_tv_ir(0x0D2E, apple_tv_remote_view->notifications);
                 } else if(event->key == InputKeyLeft) {
                     model->left_pressed = true;
-                    send_xbox_ir(0xDF20, xbox_controller_view->notifications);
+                    send_apple_tv_ir(0x082E, apple_tv_remote_view->notifications);
                 } else if(event->key == InputKeyRight) {
                     model->right_pressed = true;
-                    send_xbox_ir(0xDE21, xbox_controller_view->notifications);
+                    send_apple_tv_ir(0x072E, apple_tv_remote_view->notifications);
                 } else if(event->key == InputKeyOk) {
                     model->ok_pressed = true;
-                    send_xbox_ir(0x9966, xbox_controller_view->notifications);
+                    send_apple_tv_ir(0x5D2E, apple_tv_remote_view->notifications);
                 } else if(event->key == InputKeyBack) {
                     model->back_pressed = true;
-                    send_xbox_ir(0x9A65, xbox_controller_view->notifications);
+                    send_apple_tv_ir(0x022E, apple_tv_remote_view->notifications);
                 }
             } else if(event->type == InputTypeRelease) {
                 if(event->key == InputKeyUp) {
@@ -168,53 +168,53 @@ static void
         true);
 }
 
-static bool xbox_controller_view_input_callback(InputEvent* event, void* context) {
+static bool apple_tv_remote_view_input_callback(InputEvent* event, void* context) {
     furi_assert(context);
-    XboxControllerView* xbox_controller_view = context;
+    AppleTVRemoteView* apple_tv_remote_view = context;
     bool consumed = false;
 
     if(event->type == InputTypeLong && event->key == InputKeyBack) {
         // LONG KEY BACK PRESS HANDLER
     } else {
-        xbox_controller_view_process(xbox_controller_view, event);
+        apple_tv_remote_view_process(apple_tv_remote_view, event);
         consumed = true;
     }
 
     return consumed;
 }
 
-XboxControllerView* xbox_controller_view_alloc(NotificationApp* notifications) {
-    XboxControllerView* xbox_controller_view = malloc(sizeof(XboxControllerView));
-    xbox_controller_view->view = view_alloc();
-    xbox_controller_view->notifications = notifications;
-    view_set_orientation(xbox_controller_view->view, ViewOrientationVertical);
-    view_set_context(xbox_controller_view->view, xbox_controller_view);
+AppleTVRemoteView* apple_tv_remote_view_alloc(NotificationApp* notifications) {
+    AppleTVRemoteView* apple_tv_remote_view = malloc(sizeof(AppleTVRemoteView));
+    apple_tv_remote_view->view = view_alloc();
+    apple_tv_remote_view->notifications = notifications;
+    view_set_orientation(apple_tv_remote_view->view, ViewOrientationVertical);
+    view_set_context(apple_tv_remote_view->view, apple_tv_remote_view);
     view_allocate_model(
-        xbox_controller_view->view, ViewModelTypeLocking, sizeof(XboxControllerViewModel));
-    view_set_draw_callback(xbox_controller_view->view, xbox_controller_view_draw_callback);
-    view_set_input_callback(xbox_controller_view->view, xbox_controller_view_input_callback);
+        apple_tv_remote_view->view, ViewModelTypeLocking, sizeof(AppleTVRemoteViewModel));
+    view_set_draw_callback(apple_tv_remote_view->view, apple_tv_remote_view_draw_callback);
+    view_set_input_callback(apple_tv_remote_view->view, apple_tv_remote_view_input_callback);
 
-    return xbox_controller_view;
+    return apple_tv_remote_view;
 }
 
-void xbox_controller_view_free(XboxControllerView* xbox_controller_view) {
-    furi_assert(xbox_controller_view);
-    view_free(xbox_controller_view->view);
-    free(xbox_controller_view);
+void apple_tv_remote_view_free(AppleTVRemoteView* apple_tv_remote_view) {
+    furi_assert(apple_tv_remote_view);
+    view_free(apple_tv_remote_view->view);
+    free(apple_tv_remote_view);
 }
 
-View* xbox_controller_view_get_view(XboxControllerView* xbox_controller_view) {
-    furi_assert(xbox_controller_view);
-    return xbox_controller_view->view;
+View* apple_tv_remote_view_get_view(AppleTVRemoteView* apple_tv_remote_view) {
+    furi_assert(apple_tv_remote_view);
+    return apple_tv_remote_view->view;
 }
 
-void xbox_controller_view_set_connected_status(
-    XboxControllerView* xbox_controller_view,
+void apple_tv_remote_view_set_connected_status(
+    AppleTVRemoteView* apple_tv_remote_view,
     bool connected) {
-    furi_assert(xbox_controller_view);
+    furi_assert(apple_tv_remote_view);
     with_view_model(
-        xbox_controller_view->view,
-        XboxControllerViewModel * model,
+        apple_tv_remote_view->view,
+        AppleTVRemoteViewModel * model,
         { model->connected = connected; },
         true);
 }
